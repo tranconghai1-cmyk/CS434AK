@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản Lý Lịch Đặt Sân</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f3f4f6;
+        padding: 20px;
+    }
+
+    h1 {
+        text-align: center;
+        color: #027a48;
+        margin-bottom: 20px;
+    }
+
+    .container {
+        display: flex;
+        gap: 20px;
+    }
+
+    /* Form thêm lịch */
+    .form-box {
+        width: 35%;
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+        font-weight: bold;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0 15px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+    }
+
+    button {
+        width: 100%;
+        padding: 10px;
+        background: #027a48;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    button:hover {
+        background: #02653c;
+    }
+
+    /* Bảng danh sách */
+    .table-box {
+        width: 65%;
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    th, td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
+
+    tr:hover {
+        background: #f1f1f1;
+    }
+
+    .delete-btn {
+        background: red;
+        padding: 6px 10px;
+        border: none;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .delete-btn:hover {
+        background: darkred;
+    }
+</style>
+</head>
+
+<body>
+
+<h1>QUẢN LÝ LỊCH ĐẶT SÂN</h1>
+
+<div class="container">
+
+    <!-- Form thêm lịch đặt sân -->
+    <div class="form-box">
+        <h3>Thêm lịch đặt sân</h3>
+
+        <label>Tên khách hàng</label>
+        <input type="text" id="customer">
+
+        <label>Chọn sân</label>
+        <select id="field">
+            <option value="Sân 5">Sân 5</option>
+            <option value="Sân 7">Sân 7</option>
+            <option value="Sân 11">Sân 11</option>
+        </select>
+
+        <label>Ngày đặt</label>
+        <input type="date" id="date">
+
+        <label>Giờ bắt đầu</label>
+        <input type="time" id="start">
+
+        <label>Giờ kết thúc</label>
+        <input type="time" id="end">
+
+        <button onclick="addBooking()">Thêm lịch đặt</button>
+    </div>
+
+    <!-- Bảng danh sách -->
+    <div class="table-box">
+        <h3>Danh sách lịch đặt sân</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Khách hàng</th>
+                    <th>Sân</th>
+                    <th>Ngày</th>
+                    <th>Bắt đầu</th>
+                    <th>Kết thúc</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="booking-list"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+
+    function render() {
+        const list = document.getElementById("booking-list");
+        list.innerHTML = "";
+
+        bookings.forEach((b, index) => {
+            list.innerHTML += `
+                <tr>
+                    <td>${b.customer}</td>
+                    <td>${b.field}</td>
+                    <td>${b.date}</td>
+                    <td>${b.start}</td>
+                    <td>${b.end}</td>
+                    <td><button class="delete-btn" onclick="deleteBooking(${index})">Xóa</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function addBooking() {
+        const customer = document.getElementById("customer").value;
+        const field = document.getElementById("field").value;
+        const date = document.getElementById("date").value;
+        const start = document.getElementById("start").value;
+        const end = document.getElementById("end").value;
+
+        if (!customer || !date || !start || !end) {
+            alert("Vui lòng nhập đầy đủ thông tin!");
+            return;
+        }
+
+        bookings.push({ customer, field, date, start, end });
+        localStorage.setItem("bookings", JSON.stringify(bookings));
+
+        render();
+        alert("Thêm lịch đặt thành công!");
+    }
+
+    function deleteBooking(i) {
+        bookings.splice(i, 1);
+        localStorage.setItem("bookings", JSON.stringify(bookings));
+        render();
+    }
+
+    render();
+</script>
+
+</body>
+</html>
