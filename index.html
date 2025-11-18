@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đặt lịch sân</title>
+<style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:0;}
+    body { background:#f0f4f8; color:#333; display:flex; justify-content:center; padding:10px; }
+    .container { max-width:360px; width:100%; background:#fff; border-radius:10px; box-shadow:0 8px 20px rgba(0,0,0,0.1); overflow:hidden;}
+    header { background:linear-gradient(90deg, #2980b9, #6dd5fa); color:white; padding:12px; text-align:center;}
+    header h1 { font-size:18px; font-weight:700; }
+    section { padding:12px; }
+    h3 { margin-bottom:8px; color:#34495e; font-weight:600; font-size:13px; }
+
+    /* Calendar */
+    .calendar-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .calendar-header h2 { font-size:13px; font-weight:700; color:#2c3e50; }
+    .calendar-header button { background:#2980b9; border:none; color:white; font-weight:700; font-size:12px; width:26px; height:26px; border-radius:50%; cursor:pointer; transition:0.3s; }
+    .calendar-header button:hover { background:#1f5a8a; }
+    .weekdays, .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; margin-bottom:4px; }
+    .weekdays div { font-weight:700; color:#7f8c8d; font-size:10px; padding:2px 0; }
+    .calendar-day { background:#e8f0fe; border-radius:5px; padding:4px 0; text-align:center; font-weight:600; color:#2980b9; cursor:pointer; font-size:11px; transition:0.3s; box-shadow:0 1px 3px rgba(41,128,185,0.2);}
+    .calendar-day:hover:not(.red):not(.selected) { background:#d0e4ff; box-shadow:0 2px 4px rgba(41,128,185,0.3); }
+    .calendar-day.red { background:#f8d7da; color:#a94442; cursor:not-allowed; box-shadow:none;}
+    .calendar-day.selected { background:#2980b9; color:white; box-shadow:0 2px 4px rgba(41,128,185,0.5); }
+
+    /* Slots */
+    .slot-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:4px; }
+    .slot { background:#d1e7dd; color:#155724; padding:4px 0; text-align:center; border-radius:5px; font-weight:600; cursor:pointer; box-shadow:0 1px 3px rgba(21,87,36,0.3); transition:0.3s; font-size:10px; }
+    .slot:hover:not(.booked):not(.selected){ background:#a3d1a4; box-shadow:0 2px 4px rgba(25,105,44,0.4); }
+    .slot.booked{ background:#b0b0b0; color:#505050; cursor:not-allowed; box-shadow:none; }
+    .slot.selected{ background:#19692c; color:white; box-shadow:0 2px 4px rgba(25,105,44,0.6); }
+
+    /* Form */
+    form { display:flex; flex-direction:column; gap:8px; }
+    label { font-weight:600; color:#34495e; font-size:11px; }
+    input, textarea { padding:6px 8px; border:1px solid #ccc; border-radius:6px; font-size:12px; outline:none; transition:0.3s; }
+    input:focus, textarea:focus { border-color:#2980b9; box-shadow:0 0 4px rgba(41,128,185,0.4); }
+    textarea { resize:vertical; min-height:50px; }
+    button#confirmBtn { background:#2980b9; color:white; font-weight:700; padding:6px 0; border:none; border-radius:8px; font-size:13px; cursor:pointer; box-shadow:0 2px 6px rgba(41,128,185,0.5); transition:0.3s; }
+    button#confirmBtn:hover { background:#1f5a8a; box-shadow:0 3px 8px rgba(31,90,138,0.7); }
+    .message { margin-top:8px; font-weight:600; text-align:center; color:#27ae60; font-size:11px; }
+
+    @media(max-width:360px){
+        .slot-grid { grid-template-columns:repeat(2,1fr); }
+        .calendar-grid, .weekdays { grid-template-columns:repeat(7,1fr); }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+<header><h1>Đặt lịch sân</h1></header>
+
+<section class="calendar-section">
+<div class="calendar-header">
+<button id="prevMonth">&lt;</button>
+<h2 id="monthYear">Tháng 2 / 2025</h2>
+<button id="nextMonth">&gt;</button>
+</div>
+<div class="weekdays">
+<div>CN</div><div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div>
+</div>
+<div id="calendarDays" class="calendar-grid"></div>
+</section>
+
+<section class="slots-section">
+<h3>Chọn khung giờ</h3>
+<div id="slotList" class="slot-grid"></div>
+</section>
+
+<section class="form-section">
+<h3>Thông tin đặt sân</h3>
+<form id="bookingForm">
+<label for="name">Tên người đặt</label>
+<input type="text" id="name" name="name" placeholder="Nhập tên..." required />
+<label for="phone">Số điện thoại</label>
+<input type="tel" id="phone" name="phone" placeholder="Nhập số điện thoại..." required pattern="[0-9]{9,12}" />
+<label for="note">Ghi chú</label>
+<textarea id="note" name="note" placeholder="Ghi chú (không bắt buộc)"></textarea>
+<button type="submit" id="confirmBtn">Xác nhận</button>
+</form>
+</section>
+
+<div id="message" class="message"></div>
+</div>
+
+<script>
+    const redDates = ['2025-02-05','2025-02-14','2025-02-20'];
+    const timeSlots = ["07:00–08:30","08:30–10:00","10:00–11:30","11:30–13:00","13:00–14:30","14:30–16:00","16:00–17:30","17:30–19:00","19:00–20:30"];
+    const bookedSlotsByDate = {"2025-02-06":["08:30–10:00","13:00–14:30"],"2025-02-10":["07:00–08:30","17:30–19:00"],"2025-02-18":["14:30–16:00"]};
+    let selectedDate=null, selectedSlot=null;
+    const monthYearEl=document.getElementById('monthYear'), calendarDaysEl=document.getElementById('calendarDays'), slotListEl=document.getElementById('slotList'), bookingForm=document.getElementById('bookingForm'), messageEl=document.getElementById('message');
+    let currentYear=2025, currentMonth=1;
+
+    function isRedDate(dateStr){return redDates.includes(dateStr);}
+    function formatDate(date){return date.toISOString().slice(0,10);}
+    function updateMonthYear(){const monthNames=["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6","Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"]; monthYearEl.textContent=`${monthNames[currentMonth]} / ${currentYear}`;}
+    function renderCalendar(){
+        calendarDaysEl.innerHTML='';
+        const firstDay=new Date(currentYear,currentMonth,1), lastDay=new Date(currentYear,currentMonth+1,0), daysInMonth=lastDay.getDate(), startDay=firstDay.getDay();
+        for(let i=0;i<startDay;i++){calendarDaysEl.appendChild(document.createElement('div'));}
+        for(let day=1;day<=daysInMonth;day++){
+            const date=new Date(currentYear,currentMonth,day), dateStr=formatDate(date);
+            const dayDiv=document.createElement('div'); dayDiv.classList.add('calendar-day'); dayDiv.textContent=day;
+            if(isRedDate(dateStr)){dayDiv.classList.add('red');} else {dayDiv.addEventListener('click',()=>{selectedDate=dateStr; selectedSlot=null; renderCalendar(); renderSlots(); clearMessage();});}
+            if(selectedDate===dateStr){dayDiv.classList.add('selected');}
+            calendarDaysEl.appendChild(dayDiv);
+        }
+    }
+    function renderSlots(){
+        slotListEl.innerHTML='';
+        if(!selectedDate){slotListEl.innerHTML='<p style="font-size:10px;color:#7f8c8d;text-align:center;">Vui lòng chọn ngày trước.</p>'; return;}
+        const bookedSlots=bookedSlotsByDate[selectedDate]||[];
+        timeSlots.forEach(slot=>{
+            const slotDiv=document.createElement('div'); slotDiv.classList.add('slot'); slotDiv.textContent=slot;
+            if(bookedSlots.includes(slot)){slotDiv.classList.add('booked');} else {slotDiv.addEventListener('click',()=>{selectedSlot=slot; renderSlots(); clearMessage();});}
+            if(selectedSlot===slot){slotDiv.classList.add('selected');}
+            slotListEl.appendChild(slotDiv);
+        });
+    }
+    function clearMessage(){messageEl.textContent=''; messageEl.style.color='#27ae60';}
+    function showMessage(text,type='success'){messageEl.textContent=text; messageEl.style.color=(type==='error')?'#e74c3c':'#27ae60';}
+
+    bookingForm.addEventListener('submit',(e)=>{
+        e.preventDefault();
+        if(!selectedDate){showMessage('Vui lòng chọn ngày!','error'); return;}
+        if(!selectedSlot){showMessage('Vui lòng chọn khung giờ!','error'); return;}
+        const name=bookingForm.name.value.trim(), phone=bookingForm.phone.value.trim(), note=bookingForm.note.value.trim();
+        if(!name||!phone){showMessage('Vui lòng nhập tên và số điện thoại!','error'); return;}
+        if(!bookedSlotsByDate[selectedDate]){bookedSlotsByDate[selectedDate]=[];}
+        if(bookedSlotsByDate[selectedDate].includes(selectedSlot)){showMessage('Khung giờ đã được đặt, vui lòng chọn khung giờ khác.','error'); return;}
+        bookedSlotsByDate[selectedDate].push(selectedSlot);
+        showMessage(`Đặt sân thành công cho ngày ${selectedDate}, khung giờ ${selectedSlot}.`);
+        bookingForm.reset(); selectedSlot=null; renderSlots();
+    });
+
+    document.getElementById('prevMonth').addEventListener('click',()=>{
+        currentMonth--; if(currentMonth<0){currentMonth=11; currentYear--;}
+        selectedDate=null; selectedSlot=null; updateMonthYear(); renderCalendar(); renderSlots(); clearMessage();
+    });
+    document.getElementById('nextMonth').addEventListener('click',()=>{
+        currentMonth++; if(currentMonth>11){currentMonth=0; currentYear++;}
+        selectedDate=null; selectedSlot=null; updateMonthYear(); renderCalendar(); renderSlots(); clearMessage();
+    });
+
+    updateMonthYear(); renderCalendar(); renderSlots();
+</script>
+</body>
+</html>
