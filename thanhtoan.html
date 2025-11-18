@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Thanh toán tiền sân</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0ebe0; /* nền tổng thể nhạt */
+            padding: 20px;
+        }
+        /* Khung tiêu đề */
+        .title-card {
+            max-width: 500px;
+            margin: 0 auto 20px auto;
+            background: #4CAF50; /* nền xanh lá đậm */
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            color: #ffffff; /* chữ trắng */
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+
+        /* Khung thanh toán */
+        .payment-card {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #f5f1e0; /* màu be nhạt */
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+            .payment-card h3 {
+                margin-bottom: 10px;
+                color: #222;
+            }
+
+        /* Thông tin booking */
+        .booking-info div {
+            margin-bottom: 6px;
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        .booking-info strong {
+            color: #222;
+        }
+
+        .amount {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin: 12px 0;
+            color: #4CAF50;
+        }
+
+        /* Phương thức thanh toán (gọn hơn) */
+        .payment-methods {
+            margin: 12px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .payment-method {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* giảm khoảng cách */
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            min-height: 40px; /* nhỏ hơn */
+        }
+
+            .payment-method:hover {
+                background-color: #f0f8ff;
+                border-color: #4CAF50;
+            }
+
+            .payment-method input {
+                transform: scale(1.1); /* nhỏ hơn */
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+
+            .payment-method img {
+                width: 35px; /* nhỏ hơn */
+                height: 35px;
+                object-fit: contain;
+                flex-shrink: 0;
+            }
+
+            .payment-method span {
+                font-weight: bold;
+                color: #222;
+                flex: 1;
+                font-size: 0.95rem; /* nhỏ hơn */
+            }
+
+        /* Nút thanh toán */
+        .btn-pay {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 12px;
+        }
+
+            .btn-pay:hover {
+                background-color: #45a049;
+            }
+
+        @media (max-width: 500px) {
+            .payment-card {
+                padding: 15px;
+            }
+
+            .payment-method img {
+                width: 30px;
+                height: 30px;
+            }
+
+            .payment-method span {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="title-card">Thanh toán tiền sân</div>
+
+    <div class="payment-card">
+        <h3>Thông tin booking</h3>
+        <div class="booking-info">
+            <div><strong>Tên khách:</strong> Nguyễn Văn A</div>
+            <div><strong>Sân:</strong> Sân 1</div>
+            <div><strong>Ngày:</strong> 20/11/2025</div>
+            <div><strong>Khung giờ:</strong> 16:00 - 17:00</div>
+            <div class="amount">Số tiền: 200.000 VND</div>
+        </div>
+
+        <h3>Chọn phương thức thanh toán</h3>
+        <div class="payment-methods">
+            <label class="payment-method">
+                <input type="radio" name="payment" value="Momo">
+                <img src="images/momo.jpg" alt="Momo">
+                <span>Momo</span>
+            </label>
+
+            <label class="payment-method">
+                <input type="radio" name="payment" value="ZaloPay">
+                <img src="images/zalopay.png" alt="ZaloPay">
+                <span>ZaloPay</span>
+            </label>
+
+            <label class="payment-method">
+                <input type="radio" name="payment" value="Ví điện tử">
+                <img src="images/vidientu.jpg" alt="Ví điện tử">
+                <span>Ví điện tử</span>
+            </label>
+
+            <label class="payment-method">
+                <input type="radio" name="payment" value="Card">
+                <img src="images/thenganhang.jpg" alt="Thẻ ngân hàng">
+                <span>Card</span>
+            </label>
+        </div>
+
+        <button class="btn-pay" onclick="payNow()">Thanh toán</button>
+    </div>
+
+    <script>
+        function payNow() {
+            const method = document.querySelector('input[name="payment"]:checked');
+            if (!method) {
+                alert("Vui lòng chọn phương thức thanh toán!");
+                return;
+            }
+            alert("Thanh toán thành công bằng " + method.value);
+        }
+    </script>
+
+</body>
+</html>
