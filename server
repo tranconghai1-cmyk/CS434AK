@@ -1,0 +1,214 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const sqlite3 = require('sqlite3').verbose();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+const SECRET_KEY = "your_secret_key"; // đổi key mạnh hơn
+
+// Kết nối SQLite
+const db = new sqlite3.Database('./football.db', (err) => {
+    if (err) console.error(err.message);
+    else console.log('Connected to SQLite database.');
+});
+
+// Tạo bảng nếu chưa tồn tại
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS admins (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS fields (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        location TEXT,
+        price_per_hour REAL
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS customers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS bookings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        field_id INTEGER,
+        customer_id INTEGER,
+        booking_date TEXT,
+        start_time TEXT,
+        end_time TEXT,
+        FOREIGN KEY(field_id) REFERENCES fields(id),
+        FOREIGN KEY(customer_id) REFERENCES customers(id)
+    )`);
+});
+
+// Middleware xác thực
+function authenticateToken(req, res, next) {
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) return res.sendStatus(401);
+
+    jwt.verify(token, SECRET_KEY, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+}
+
+// ================= ADMIN =================
+app.post('/admin/register', async (req, res) => {
+    const { username, password } = req.body;
+    const hash = await bcrypt.hash(password, 10);
+    db.run('INSERT INTO admins (username, password) VALUES (?, ?)', [username, hash], function(err){
+        if(err) return res.status(400).json({ message: err.message });
+        res.json({ id: this.lastID });
+    });
+});
+
+app.post('/admin/login', (req, res) => {
+    const { username, password } = req.body;
+    db.get('SELECT * FROM admins WHERE username=?', [username], async (err, row) => {
+        if(err) return res.status(400).json({ message: err.message });
+        if(!row) return res.status(400).json({ message: "User not found" });
+
+        const match = await bcrypt.compare(password, row.password);
+        if(!match) return res.status(400).json({ message: "Incorrect password" });
+
+        const token = jwt.sign({ id: row.id, username }, SECRET_KEY, { expiresIn: '1h' });
+        res.json({ token });
+    });
+});
+
+// ================= FIELDS =================
+app.get('/fields', authenticateToken, (req, res) => {
+    db.all('SELECT * FROM fields', [], (err, rows) => {
+        if(err) return res.status(400).json({ message: err.message });
+        res.json(rows);
+    });
+});
+
+app.post('/fields', authenticateToken, (req, res) => {
+    const { name, location, price_per_hour } = req.body;
+    db.run('INSERT INTO fields (name, location, price_per_hour) VALUES (?, ?, ?)',
+        [name, location, price_per_hour], function(err){
+            if(err) return res.status(400).json({ message: err.message });
+            res.json({ id: this.lastID });
+        });
+});
+
+app.put('/fields/:id', authenticateToken, (req, res) => {
+    const { name, location, price_per_hour } = req.body;
+    db.run('UPDATE fields SET name=?, location=?, price_per_hour=? WHERE id=?',
+        [name, location, price_per_hour, req.params.id], function(err){
+            if(err) return res.status(400).json({ message: err.message });
+            res.json({ message: "Updated" });
+        });
+});
+
+app.delete('/fields/:id', authenticateToken, (req, res) => {
+    db.run('DELETE FROM fields WHERE id=?', [req.params.id], function(err){
+        if(err) return res.status(400).json({ message: err.message });
+        res.json({ message: "Deleted" });
+    });
+});
+
+// ================= CUSTOMERS =================
+app.get('/customers', authenticateToken, (req, res) => {
+    db.all('SELECT * FROM customers', [], (err, rows) => {
+        if(err) return res.status(400).json({ message: err.message });
+        res.json(rows);
+    });
+});
+
+app.post('/customers', authenticateToken, (req, res) => {
+    const { name, phone } = req.body;
+    db.run('INSERT INTO customers (name, phone) VALUES (?, ?)', [name, phone], function(err){
+        if(err) return res.status(400).json({ message: err.message });
+        res.json({ id: this.lastID });
+    });
+});
+
+app.put('/customers/:id', authenticateToken, (req, res) => {
+    const { name, phone } = req.body;
+    db.run('UPDATE customers SET name=?, phone=? WHERE id=?', [name, phone, req.params.id], function(err){
+        if(err) return res.status(400).json({ message: err.message });
+        res.json({ message: "Updated" });
+    });
+});
+
+app.delete('/customers/:id', authenticateToken, (req, res) => {
+    db.run('DELETE FROM customers WHERE id=?', [req.params.id], function(err){
+        if(err) return res.status(400).json({ message: err.message });
+        res.json({ message: "Deleted" });
+    });
+});
+
+// ================= BOOKINGS =================
+app.get('/bookings', authenticateToken, (req, res) => {
+    const query = `
+        SELECT b.*, f.name as field_name, c.name as customer_name
+        FROM bookings b
+        JOIN fields f ON b.field_id=f.id
+        JOIN customers c ON b.customer_id=c.id
+    `;
+    db.all(query, [], (err, rows) => {
+        if(err) return res.status(400).json({ message: err.message });
+        res.json(rows);
+    });
+});
+
+app.post('/bookings', authenticateToken, (req, res) => {
+    const { field_id, customer_id, booking_date, start_time, end_time } = req.body;
+
+    const checkQuery = `
+        SELECT * FROM bookings
+        WHERE field_id=? AND booking_date=? AND NOT (end_time <= ? OR start_time >= ?)
+    `;
+    db.all(checkQuery, [field_id, booking_date, start_time, end_time], (err, rows) => {
+        if(err) return res.status(400).json({ message: err.message });
+        if(rows.length > 0) return res.status(400).json({ message: "Time slot already booked" });
+
+        db.run('INSERT INTO bookings (field_id, customer_id, booking_date, start_time, end_time) VALUES (?, ?, ?, ?, ?)',
+            [field_id, customer_id, booking_date, start_time, end_time], function(err){
+                if(err) return res.status(400).json({ message: err.message });
+                res.json({ id: this.lastID });
+            });
+    });
+});
+
+app.put('/bookings/:id', authenticateToken, (req, res) => {
+    const { field_id, customer_id, booking_date, start_time, end_time } = req.body;
+
+    const checkQuery = `
+        SELECT * FROM bookings
+        WHERE field_id=? AND booking_date=? AND id<>? AND NOT (end_time <= ? OR start_time >= ?)
+    `;
+    db.all(checkQuery, [field_id, booking_date, req.params.id, start_time, end_time], (err, rows) => {
+        if(err) return res.status(400).json({ message: err.message });
+        if(rows.length > 0) return res.status(400).json({ message: "Time slot already booked" });
+
+        db.run('UPDATE bookings SET field_id=?, customer_id=?, booking_date=?, start_time=?, end_time=? WHERE id=?',
+            [field_id, customer_id, booking_date, start_time, end_time, req.params.id], function(err){
+                if(err) return res.status(400).json({ message: err.message });
+                res.json({ message: "Updated" });
+            });
+    });
+});
+
+app.delete('/bookings/:id', authenticateToken, (req, res) => {
+    db.run('DELETE FROM bookings WHERE id=?', [req.params.id], function(err){
+        if(err) return res.status(400).json({ message: err.message });
+        res.json({ message: "Deleted" });
+    });
+});
+
+// ================= START SERVER =================
+const PORT = 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
