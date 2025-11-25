@@ -1,0 +1,8 @@
+exports.createPayment = (req, res) => {
+  const { customerName, field, date, time, amount, method } = req.body;
+
+  return res.json({
+    message: `Thanh toán thành công bằng ${method}`,
+    payment: { customerName, field, date, time, amount, method },
+  });
+};
