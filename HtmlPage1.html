@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trang chủ - Đặt sân bóng</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0066cc;
+            padding: 10px 20px;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+            .navbar .logo {
+                font-size: 22px;
+                font-weight: bold;
+                letter-spacing: 1px;
+            }
+            .navbar ul {
+                list-style: none;
+                display: flex;
+                gap: 25px;
+            }
+
+                .navbar ul li a {
+                    color: white;
+                    text-decoration: none;
+                    font-weight: 500;
+                    transition: 0.3s;
+                }
+
+                    .navbar ul li a:hover {
+                        color: #ffcc00;
+                    }
+        footer {
+            background-color: #003366;
+            color: white;
+            text-align: center;
+            padding: 25px 10px;
+            margin-top: 40px;
+        }
+            footer p {
+                font-size: 14px;
+            }
+        .menu-toggle {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .navbar ul {
+                display: none;
+                flex-direction: column;
+                background-color: #0066cc;
+                position: absolute;
+                top: 60px;
+                right: 0;
+                width: 200px;
+                border-radius: 4px;
+            }
+                .navbar ul.active {
+                    display: flex;
+                }
+            .menu-toggle {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">⚽ Sân Bóng</div>
+
+        <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+
+        <ul id="menu">
+            <li><a href="#">Trang chủ</a></li>
+            <li><a href="#">Danh sách sân</a></li>
+            <li><a href="#">Liên hệ</a></li>
+            <li><a href="#">Đăng nhập</a></li>
+        </ul>
+    </nav>
+    <main style="padding: 30px; min-height: 70vh;">
+        <h1>Chào mừng bạn đến với hệ thống đặt sân bóng!</h1>
+        <p></p>
+    </main>
+    <footer>
+        <p>&copy; 2025 Sân Bóng Duy Tân. All rights reserved.</p>
+    </footer>
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById("menu");
+            menu.classList.toggle("active");
+        }
+    </script>
+</body>
+</html>
